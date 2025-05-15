@@ -15,15 +15,42 @@ class CofreApp extends StatelessWidget {
       title: 'Cofrinho de Recados',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.grey[200],
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        scaffoldBackgroundColor: const Color(0xFFF5F9FF),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+          elevation: 2,
+        ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blueAccent,
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(20)),
+            ),
+            elevation: 3,
           ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: const BorderSide(color: Colors.blueAccent),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: const BorderSide(color: Colors.blue),
+          ),
+          labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        textTheme: const TextTheme(
+          titleLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          bodyMedium: TextStyle(fontSize: 16),
         ),
       ),
       home: const LoginPage(),
@@ -31,7 +58,6 @@ class CofreApp extends StatelessWidget {
   }
 }
 
-// Tela de Login
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -57,14 +83,10 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // Simulação de login bem-sucedido
     if (email == "teste@email.com" && password == "123456") {
       final token = "fake_token_123";
-
-      // Armazena o token de forma segura
       await _secureStorage.write(key: "auth_token", value: token);
 
-      // Redireciona para a tela principal
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const CofrePage()),
@@ -80,24 +102,45 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("🔐 Login")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const SizedBox(height: 16),
+            const Text(
+              "🎓 Acesso ao Cofrinho",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 32),
             TextField(
               controller: _emailController,
-              decoration: const InputDecoration(labelText: "Email", border: OutlineInputBorder()),
+              decoration: const InputDecoration(labelText: "Email"),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             TextField(
               controller: _passwordController,
-              decoration: const InputDecoration(labelText: "Senha", border: OutlineInputBorder()),
               obscureText: true,
+              decoration: const InputDecoration(labelText: "Senha"),
+            ),
+            const SizedBox(height: 28),
+            ElevatedButton.icon(
+              onPressed: _login,
+              icon: const Icon(Icons.login),
+              label: const Text("Entrar"),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(onPressed: _login, child: const Text("Entrar")),
-            const SizedBox(height: 20),
-            Text(_message ?? "", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red)),
+            if (_message != null && _message!.isNotEmpty)
+              Text(
+                _message!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
           ],
         ),
       ),
@@ -105,7 +148,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-// Tela do Cofrinho de Recados
 class CofrePage extends StatefulWidget {
   const CofrePage({super.key});
 
@@ -130,9 +172,8 @@ class _CofrePageState extends State<CofrePage> {
     _inicializarCriptografia();
   }
 
-  Future<void> _inicializarCriptografia() async {
+  void _inicializarCriptografia() {
     _key = encrypt.Key.fromSecureRandom(32);
-    _iv = encrypt.IV.fromSecureRandom(16);
     _encrypter = encrypt.Encrypter(encrypt.AES(_key));
   }
 
@@ -149,6 +190,7 @@ class _CofrePageState extends State<CofrePage> {
     final texto = _controller.text;
     if (texto.isEmpty) return;
 
+    _iv = encrypt.IV.fromSecureRandom(16);
     final criptografado = _criptografar(texto);
 
     await _secureStorage.write(key: 'recado', value: criptografado);
@@ -178,6 +220,7 @@ class _CofrePageState extends State<CofrePage> {
 
   Future<void> _recriptografar() async {
     if (_recadoDescriptografado != null) {
+      _iv = encrypt.IV.fromSecureRandom(16);
       final recriptografado = _criptografar(_recadoDescriptografado!);
       await _secureStorage.write(key: 'recado', value: recriptografado);
       await _secureStorage.write(key: 'iv', value: _iv.base64);
@@ -201,34 +244,74 @@ class _CofrePageState extends State<CofrePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('🔐 Cofrinho de Recados')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(controller: _controller, decoration: const InputDecoration(labelText: 'Digite seu recado', border: OutlineInputBorder())),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(onPressed: _salvarRecado, icon: const Icon(Icons.lock), label: const Text('Salvar')),
-            ElevatedButton.icon(onPressed: _lerRecado, icon: const Icon(Icons.lock_open), label: const Text('Mostrar')),
-            ElevatedButton.icon(onPressed: _recriptografar, icon: const Icon(Icons.lock), label: const Text('Re-criptografar')),
-            const SizedBox(height: 24),
+            TextField(
+              controller: _controller,
+              decoration: const InputDecoration(labelText: 'Digite seu recado'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: _salvarRecado,
+              icon: const Icon(Icons.lock),
+              label: const Text('Salvar Recado'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _lerRecado,
+              icon: const Icon(Icons.visibility),
+              label: const Text('Mostrar Recado'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _recriptografar,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Re-criptografar'),
+            ),
+            const SizedBox(height: 30),
             if (_recadoCriptografado != null)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('🔒 Recado criptografado:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(_recadoCriptografado!),
-                ],
+              Card(
+                elevation: 2,
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('🔒 Recado criptografado:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Text(_recadoCriptografado!),
+                    ],
+                  ),
+                ),
               ),
             if (_recadoDescriptografado != null)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('🔓 Recado original:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(_recadoDescriptografado!),
-                ],
+              Card(
+                elevation: 2,
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('🔓 Recado original:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Text(_recadoDescriptografado!),
+                    ],
+                  ),
+                ),
               ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(onPressed: _voltarAoLogin, icon: const Icon(Icons.exit_to_app), label: const Text('Voltar ao Login')),
+            const SizedBox(height: 30),
+            ElevatedButton.icon(
+              onPressed: _voltarAoLogin,
+              icon: const Icon(Icons.exit_to_app),
+              label: const Text('Voltar ao Login'),
+            ),
           ],
         ),
       ),
